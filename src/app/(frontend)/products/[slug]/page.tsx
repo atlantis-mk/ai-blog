@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: Args) {
             ) : null}
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {downloadURL && currentRelease ? (
+              {downloadURL && currentRelease && (
                 <a
                   className="inline-flex items-center gap-2 bg-foreground px-5 py-3 text-sm font-medium text-background hover:opacity-85"
                   href={downloadURL}
@@ -122,10 +122,6 @@ export default async function ProductPage({ params }: Args) {
                   <ArrowDownToLine aria-hidden="true" className="size-4" />
                   下载 v{currentRelease.version}
                 </a>
-              ) : (
-                <span className="inline-flex items-center border border-border px-5 py-3 text-sm text-muted-foreground">
-                  即将发布
-                </span>
               )}
               {product.links?.map(({ id, label, url: linkURL }) => (
                 <a
