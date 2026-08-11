@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: Args) {
             )}
           </div>
 
-          {typeof product.heroImage === 'object' ? (
+          {product.heroImage && typeof product.heroImage === 'object' ? (
             <Media
               className="overflow-hidden border border-border bg-card"
               imgClassName="h-auto w-full object-cover"
@@ -199,7 +199,7 @@ export default async function ProductPage({ params }: Args) {
           <div className="grid gap-px border border-border bg-border md:grid-cols-3">
             {product.features.map((feature) => (
               <article className="bg-background p-6" key={feature.id || feature.title}>
-                {typeof feature.image === 'object' && (
+                {feature.image && typeof feature.image === 'object' && (
                   <Media
                     className="mb-8 aspect-[4/3] overflow-hidden bg-card"
                     imgClassName="size-full object-cover"
