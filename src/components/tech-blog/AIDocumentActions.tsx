@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Copy, Download, FileText } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Props = {
@@ -17,11 +17,9 @@ export function AIDocumentActions({ markdownURL }: Props) {
     return () => window.clearTimeout(timeout)
   }, [copied])
 
-  const copyMarkdown = async () => {
-    const response = await fetch(markdownURL)
-    if (!response.ok) return
-
-    await navigator.clipboard.writeText(await response.text())
+  const copyLink = async () => {
+    const absoluteURL = new URL(markdownURL, window.location.origin).href
+    await navigator.clipboard.writeText(absoluteURL)
     setCopied(true)
   }
 
@@ -30,22 +28,14 @@ export function AIDocumentActions({ markdownURL }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <a className={actionClassName} href={markdownURL} rel="alternate" target="_blank">
-        <FileText aria-hidden="true" className="size-3.5" />
-        查看 Markdown
-      </a>
-      <button className={actionClassName} onClick={copyMarkdown} type="button">
+      <button className={actionClassName} onClick={copyLink} type="button">
         {copied ? (
           <Check aria-hidden="true" className="size-3.5" />
         ) : (
           <Copy aria-hidden="true" className="size-3.5" />
         )}
-        {copied ? '已复制' : '复制给 AI'}
+        {copied ? '已复制' : '复制链接'}
       </button>
-      <a className={actionClassName} download href={markdownURL}>
-        <Download aria-hidden="true" className="size-3.5" />
-        下载 .md
-      </a>
     </div>
   )
 }

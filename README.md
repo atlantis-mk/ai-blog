@@ -150,6 +150,67 @@ We have configured [Scheduled Publish](https://payloadcms.com/docs/versions/draf
 
 > Note: When deployed on Vercel, depending on the plan tier, you may be limited to daily cron only.
 
+## Agent MCP publishing
+
+The application exposes a remote, stateless MCP endpoint for publishing paired A/B posts and
+reviewed software products/releases:
+
+- Endpoint: `https://YOUR_DOMAIN/api/mcp`
+- Health check: `https://YOUR_DOMAIN/api/mcp/health`
+- Authentication: `Authorization: Bearer YOUR_AGENT_API_KEY`
+
+The A document is Markdown for human readers and is converted to the same Lexical format used by
+the Payload admin editor. The B document is Markdown for AI/Agent use and keeps its execution-risk,
+compatibility, version, and review metadata. Both documents are saved on one Post.
+
+### Create an Agent credential
+
+1. Sign in to `/admin` and open **Agent 发布 → Agents**.
+2. Create an Agent, leave it enabled, and grant only the scopes it needs.
+3. For posts, use `posts:read`, `posts:write`, and optionally `posts:publish`.
+4. For software products, use `products:read`, `products:write`, and optionally
+   `products:publish`.
+5. For product releases, use `releases:read`, `releases:write`, and optionally
+   `releases:publish`.
+6. Enable the API key in the Agent authentication panel and copy the generated key into the MCP
+   client's secret configuration.
+
+Never put an Agent API key in a URL. A generic remote MCP client configuration looks like:
+
+```json
+{
+  "url": "https://YOUR_DOMAIN/api/mcp",
+  "headers": {
+    "Authorization": "Bearer YOUR_AGENT_API_KEY"
+  }
+}
+```
+
+Post tools: `list_posts`, `get_ab_post`, `create_ab_post`, `update_ab_post`, `validate_ab_post`,
+`publish_ab_post`, `list_categories`, and `list_media`.
+
+Software tools: `list_products`, `get_product`, `create_product`, `update_product`,
+`validate_product`, `publish_product`, `list_product_assets`, `list_releases`, `get_release`,
+`create_release`, `update_release`, `validate_release`, and `publish_release`.
+
+Resource templates: `aiblog://posts/{id}/human`, `aiblog://posts/{id}/agent`, and
+`aiblog://products/{id}/install`.
+
+New and changed A/B content is always a draft. A signed-in Payload user must mark the B document as
+**已审核** or **已验证** before an Agent with `posts:publish` can publish it. High-risk posts can
+only be published from the Payload admin. Every MCP tool call is recorded under **MCP 审计记录**.
+
+Software products follow the same review boundary. MCP creates and edits drafts, while a signed-in
+Payload user must mark the AI installation document as **已审核** or **已验证**. An Agent with
+`products:publish` may then publish a low- or medium-risk product. Once the product is published, an
+Agent with `releases:publish` may publish a release that has system requirements and either an
+existing Media file or an HTTPS download URL. High-risk products and their releases remain
+admin-only. Large binaries should be uploaded directly to Media/object storage and referenced by
+`fileId`, or hosted at the supplied `downloadURL`; they are not embedded as base64 in MCP requests.
+
+The application URL and Vercel deployment host are allowed automatically. For additional hosts or
+browser-based MCP clients, set comma-separated `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` values.
+
 ## Website
 
 This template includes a beautifully designed, production-ready front-end built with the [Next.js App Router](https://nextjs.org), served right alongside your Payload app in a instance. This makes it so that you can deploy both your backend and website where you need it.

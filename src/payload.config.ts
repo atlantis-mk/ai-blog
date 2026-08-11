@@ -8,7 +8,9 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
+import { Agents } from './collections/Agents'
 import { Media } from './collections/Media'
+import { MCPAuditLogs } from './collections/MCPAuditLogs'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Products } from './collections/Products'
@@ -104,7 +106,7 @@ export default buildConfig({
         migrationDir: path.resolve(dirname, 'migrations'),
         push: false,
       }),
-  collections: [Pages, Posts, Products, Releases, Media, Categories, Users],
+  collections: [Pages, Posts, Products, Releases, Media, Categories, Users, Agents, MCPAuditLogs],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
@@ -128,7 +130,7 @@ export default buildConfig({
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
         // Allow logged in users to execute this endpoint (default)
-        if (req.user) return true
+        if (req.user?.collection === Users.slug) return true
 
         const secret = process.env.CRON_SECRET
         if (!secret) return false

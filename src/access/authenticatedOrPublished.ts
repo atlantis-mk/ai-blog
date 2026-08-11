@@ -1,7 +1,9 @@
 import type { Access } from 'payload'
 
+import { isHumanUser } from './humanOnly'
+
 export const authenticatedOrPublished: Access = ({ req: { user } }) => {
-  if (user) {
+  if (isHumanUser(user)) {
     return true
   }
 

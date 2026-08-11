@@ -1,21 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import {
-  BlocksFeature,
-  FixedToolbarFeature,
-  HeadingFeature,
-  HorizontalRuleFeature,
-  InlineToolbarFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
-
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
-import { Banner } from '../../blocks/Banner/config'
-import { Code } from '../../blocks/Code/config'
-import { MediaBlock } from '../../blocks/MediaBlock/config'
+import { humanFieldAccess, humanOnly, isHumanUser } from '../../access/humanOnly'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
+import { createPostAccess, readPostAccess, updatePostAccess } from './access'
 import { aiDocumentTemplate } from './aiDocument'
+import { postEditor } from './editor'
+import { manageAgentWorkflow } from './hooks/manageAgentWorkflow'
 import { populateAuthors } from './hooks/populateAuthors'
 import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
 import { validateAIDocument } from './hooks/validateAIDocument'
@@ -36,10 +26,10 @@ export const Posts: CollectionConfig<'posts'> = {
     plural: '文章',
   },
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
-    update: authenticated,
+    create: createPostAccess,
+    delete: humanOnly,
+    read: readPostAccess,
+    update: updatePostAccess,
   },
   // This config controls what's populated by default when a post is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -92,18 +82,7 @@ export const Posts: CollectionConfig<'posts'> = {
             {
               name: 'content',
               type: 'richText',
-              editor: lexicalEditor({
-                features: ({ rootFeatures }) => {
-                  return [
-                    ...rootFeatures,
-                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                    BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
-                    FixedToolbarFeature(),
-                    InlineToolbarFeature(),
-                    HorizontalRuleFeature(),
-                  ]
-                },
-              }),
+              editor: postEditor,
               label: false,
               required: true,
             },
@@ -133,6 +112,10 @@ export const Posts: CollectionConfig<'posts'> = {
                   name: 'status',
                   type: 'select',
                   label: '验证状态',
+                  access: {
+                    create: humanFieldAccess,
+                    update: humanFieldAccess,
+                  },
                   defaultValue: 'draft',
                   options: [
                     { label: '草稿', value: 'draft' },
@@ -181,6 +164,10 @@ export const Posts: CollectionConfig<'posts'> = {
                   name: 'verifiedAt',
                   type: 'date',
                   label: '最后验证时间',
+                  access: {
+                    create: humanFieldAccess,
+                    update: humanFieldAccess,
+                  },
                   admin: {
                     condition: (_data, siblingData) => siblingData?.status === 'verified',
                     date: {
@@ -264,6 +251,53 @@ export const Posts: CollectionConfig<'posts'> = {
       ],
     },
     {
+      name: 'createdByAgent',
+      type: 'relationship',
+      label: '创建 Agent',
+      access: {
+        create: () => false,
+        read: ({ req }) => isHumanUser(req.user) || req.user?.collection === 'agents',
+        update: () => false,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      relationTo: 'agents',
+    },
+    {
+      name: 'reviewedBy',
+      type: 'relationship',
+      label: '审核人',
+      access: {
+        create: () => false,
+        read: humanFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      relationTo: 'users',
+    },
+    {
+      name: 'reviewedAt',
+      type: 'date',
+      label: '审核时间',
+      access: {
+        create: () => false,
+        read: ({ req }) => isHumanUser(req.user) || req.user?.collection === 'agents',
+        update: () => false,
+      },
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
       name: 'publishedAt',
       type: 'date',
       label: '发布时间',
@@ -325,7 +359,7 @@ export const Posts: CollectionConfig<'posts'> = {
     afterChange: [revalidatePost],
     afterRead: [populateAuthors],
     afterDelete: [revalidateDelete],
-    beforeChange: [validateAIDocument],
+    beforeChange: [manageAgentWorkflow, validateAIDocument],
   },
   versions: {
     drafts: {

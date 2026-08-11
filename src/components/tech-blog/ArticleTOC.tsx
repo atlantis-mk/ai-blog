@@ -32,25 +32,23 @@ export function ArticleTOC() {
   if (!items.length) return null
 
   return (
-    <aside className="hidden xl:block">
-      <div className="sticky top-24 border-l border-border pl-5">
-        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-          本页目录
-        </p>
-        <nav aria-label="文章目录" className="space-y-2">
-          {items.map((item) => (
-            <a
-              className={`block text-sm leading-5 text-muted-foreground hover:text-foreground ${
-                item.level === 3 ? 'pl-3' : ''
-              }`}
-              href={`#${item.id}`}
-              key={item.id}
-            >
-              {item.text}
-            </a>
-          ))}
-        </nav>
-      </div>
-    </aside>
+    <div className="border-l border-border pl-5">
+      <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        本页目录
+      </p>
+      <nav aria-label="文章目录" className="space-y-2">
+        {items.map((item) => (
+          <a
+            className={`block text-sm leading-5 text-muted-foreground hover:text-foreground ${
+              item.level === 3 ? 'pl-3' : ''
+            }`}
+            href={`#${item.id}`}
+            key={item.id}
+          >
+            {item.text}
+          </a>
+        ))}
+      </nav>
+    </div>
   )
 }

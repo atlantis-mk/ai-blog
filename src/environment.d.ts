@@ -8,6 +8,10 @@ declare global {
       NEXT_PUBLIC_SERVER_URL: string
       VERCEL_PROJECT_PRODUCTION_URL: string
       VERCEL?: string
+      VERCEL_URL?: string
+      VERCEL_BRANCH_URL?: string
+      MCP_ALLOWED_HOSTS?: string
+      MCP_ALLOWED_ORIGINS?: string
     }
   }
 }

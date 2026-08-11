@@ -1,7 +1,8 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { humanOnly, isHumanUser } from '../../access/humanOnly'
+import { createReleaseAccess, readReleaseAccess, updateReleaseAccess } from './access'
+import { manageAgentReleaseWorkflow } from './hooks/manageAgentReleaseWorkflow'
 import { revalidateRelease, revalidateReleaseDelete } from './hooks/revalidateRelease'
 import { validateRelease } from './hooks/validateRelease'
 
@@ -12,10 +13,10 @@ export const Releases: CollectionConfig<'releases'> = {
     plural: '产品版本',
   },
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
-    update: authenticated,
+    create: createReleaseAccess,
+    delete: humanOnly,
+    read: readReleaseAccess,
+    update: updateReleaseAccess,
   },
   admin: {
     defaultColumns: ['version', 'product', 'channel', 'releasedAt', 'updatedAt'],
@@ -142,11 +143,26 @@ export const Releases: CollectionConfig<'releases'> = {
         rows: 5,
       },
     },
+    {
+      name: 'createdByAgent',
+      type: 'relationship',
+      label: '创建 Agent',
+      access: {
+        create: () => false,
+        read: ({ req }) => isHumanUser(req.user) || req.user?.collection === 'agents',
+        update: () => false,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      relationTo: 'agents',
+    },
   ],
   hooks: {
     afterChange: [revalidateRelease],
     afterDelete: [revalidateReleaseDelete],
-    beforeChange: [validateRelease],
+    beforeChange: [manageAgentReleaseWorkflow, validateRelease],
   },
   versions: {
     drafts: {

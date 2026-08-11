@@ -1,5 +1,5 @@
 import type { Post } from '@/payload-types'
-import { validateAIDocument } from '@/collections/Posts/hooks/validateAIDocument'
+import { validateABPost } from '@/utilities/abPost'
 import { isAIDocumentReady, renderAIDocumentMarkdown } from '@/utilities/renderAIDocumentMarkdown'
 import { describe, expect, it } from 'vitest'
 
@@ -47,34 +47,48 @@ describe('AI document', () => {
   })
 
   it('blocks publishing a runbook without required sections', () => {
-    expect(() =>
-      validateAIDocument({
-        data: {
-          _status: 'published',
-          aiDocument: {
-            kind: 'runbook',
-            markdown: '# 目标\n\n完成任务。\n\n# 验证方法\n\n运行测试。',
-            status: 'reviewed',
-          },
-        },
-      } as never),
-    ).toThrow('前置条件、操作步骤、回滚方式')
+    const report = validateABPost({
+      aMarkdown: '# A 文',
+      aiDocument: {
+        kind: 'runbook',
+        markdown: '# 目标\n\n完成任务。\n\n# 验证方法\n\n运行测试。',
+        riskLevel: 'low',
+        status: 'reviewed',
+        version: '1.0',
+      },
+      mode: 'human-publish',
+    })
+
+    expect(report.errors.join(' ')).toContain('前置条件、操作步骤、回滚方式')
   })
 
   it('requires approval for high-risk documents', () => {
     const post = createPost()
+    const report = validateABPost({
+      aMarkdown: '# A 文',
+      aiDocument: {
+        ...post.aiDocument!,
+        requiresApproval: false,
+        riskLevel: 'high',
+      },
+      mode: 'human-publish',
+    })
 
-    expect(() =>
-      validateAIDocument({
-        data: {
-          _status: 'published',
-          aiDocument: {
-            ...post.aiDocument,
-            requiresApproval: false,
-            riskLevel: 'high',
-          },
-        },
-      } as never),
-    ).toThrow('高风险')
+    expect(report.errors.join(' ')).toContain('高风险')
+  })
+
+  it('can render a draft B document only for authenticated MCP reads', () => {
+    const post = createPost({
+      aiDocument: {
+        ...createPost().aiDocument,
+        status: 'draft',
+      },
+    })
+
+    expect(
+      renderAIDocumentMarkdown(post, 'https://example.com/posts/payload-guide', {
+        includeDraft: true,
+      }),
+    ).toContain('status: "draft"')
   })
 })

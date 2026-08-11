@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    agents: AgentAuthOperations;
   };
   blocks: {};
   collections: {
@@ -74,6 +75,8 @@ export interface Config {
     media: Media;
     categories: Category;
     users: User;
+    agents: Agent;
+    'mcp-audit-logs': McpAuditLog;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -98,6 +101,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    agents: AgentsSelect<false> | AgentsSelect<true>;
+    'mcp-audit-logs': McpAuditLogsSelect<false> | McpAuditLogsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -125,7 +130,7 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | Agent;
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -138,6 +143,24 @@ export interface Config {
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface AgentAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -273,6 +296,9 @@ export interface Post {
     image?: (number | null) | Media;
     description?: string | null;
   };
+  createdByAgent?: (number | null) | Agent;
+  reviewedBy?: (number | null) | User;
+  reviewedAt?: string | null;
   publishedAt?: string | null;
   authors?: (number | User)[] | null;
   populatedAuthors?:
@@ -312,6 +338,7 @@ export interface Media {
     };
     [k: string]: unknown;
   } | null;
+  prefix?: string | null;
   folder?: (number | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
@@ -432,6 +459,37 @@ export interface Category {
     | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agents".
+ */
+export interface Agent {
+  id: number;
+  name: string;
+  description?: string | null;
+  active: boolean;
+  scopes: (
+    | 'posts:read'
+    | 'posts:write'
+    | 'posts:publish'
+    | 'products:read'
+    | 'products:write'
+    | 'products:publish'
+    | 'releases:read'
+    | 'releases:write'
+    | 'releases:publish'
+  )[];
+  /**
+   * 留空表示不过期。
+   */
+  expiresAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+  collection: 'agents';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -871,6 +929,9 @@ export interface Product {
     image?: (number | null) | Media;
     description?: string | null;
   };
+  createdByAgent?: (number | null) | Agent;
+  reviewedBy?: (number | null) | User;
+  reviewedAt?: string | null;
   publishedAt?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
@@ -906,9 +967,26 @@ export interface Release {
   checksum?: string | null;
   changelogURL?: string | null;
   notes?: string | null;
+  createdByAgent?: (number | null) | Agent;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-audit-logs".
+ */
+export interface McpAuditLog {
+  id: number;
+  agent: number | Agent;
+  tool: string;
+  post?: (number | null) | Post;
+  requestId: string;
+  result: 'success' | 'error';
+  errorCode?: string | null;
+  message?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1129,6 +1207,14 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'agents';
+        value: number | Agent;
+      } | null)
+    | ({
+        relationTo: 'mcp-audit-logs';
+        value: number | McpAuditLog;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -1149,10 +1235,15 @@ export interface PayloadLockedDocument {
         value: number | FolderInterface;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'agents';
+        value: number | Agent;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -1162,10 +1253,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'agents';
+        value: number | Agent;
+      };
   key?: string | null;
   value?:
     | {
@@ -1354,6 +1450,9 @@ export interface PostsSelect<T extends boolean = true> {
         image?: T;
         description?: T;
       };
+  createdByAgent?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
   publishedAt?: T;
   authors?: T;
   populatedAuthors?:
@@ -1430,6 +1529,9 @@ export interface ProductsSelect<T extends boolean = true> {
         image?: T;
         description?: T;
       };
+  createdByAgent?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
   publishedAt?: T;
   generateSlug?: T;
   slug?: T;
@@ -1455,6 +1557,7 @@ export interface ReleasesSelect<T extends boolean = true> {
   checksum?: T;
   changelogURL?: T;
   notes?: T;
+  createdByAgent?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1466,6 +1569,7 @@ export interface ReleasesSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
+  prefix?: T;
   folder?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1595,6 +1699,37 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agents_select".
+ */
+export interface AgentsSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  active?: T;
+  scopes?: T;
+  expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-audit-logs_select".
+ */
+export interface McpAuditLogsSelect<T extends boolean = true> {
+  agent?: T;
+  tool?: T;
+  post?: T;
+  requestId?: T;
+  result?: T;
+  errorCode?: T;
+  message?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

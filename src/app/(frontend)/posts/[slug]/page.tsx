@@ -111,41 +111,52 @@ export default async function Post({ params: paramsPromise }: Args) {
           <div data-article-content className="article-content pt-10">
             <RichText className="max-w-none" data={post.content} enableGutter={false} />
           </div>
-
-          {hasAIDocument && (
-            <section
-              className="mt-12 border border-border bg-muted/30 p-5 md:p-6"
-              aria-labelledby="ai-document-title"
-            >
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                AI-ready
-              </p>
-              <h2 className="mt-3 text-xl font-medium tracking-[-0.025em]" id="ai-document-title">
-                AI 操作文档
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                这是本文面向 AI/Agent 的精简执行版，包含目标、约束、操作步骤和验证方法。
-              </p>
-              <dl className="my-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
-                <div className="flex gap-2">
-                  <dt>版本</dt>
-                  <dd>{post.aiDocument?.version || '1.0'}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt>风险</dt>
-                  <dd>{aiDocumentRiskLabels[aiDocumentRisk]}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt>状态</dt>
-                  <dd>{aiDocumentStatusLabels[aiDocumentStatus]}</dd>
-                </div>
-              </dl>
-              <AIDocumentActions markdownURL={aiDocumentURL} />
-            </section>
-          )}
         </div>
 
-        <ArticleTOC />
+        <aside className="order-1 xl:order-none">
+          <div className="space-y-8 xl:sticky xl:top-24">
+            {hasAIDocument && (
+              <section
+                className="border border-border bg-muted/30 p-4"
+                aria-labelledby="ai-document-title"
+              >
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  AI-ready
+                </p>
+                <h2
+                  className="mt-2 text-base font-medium tracking-[-0.025em]"
+                  id="ai-document-title"
+                >
+                  AI 操作文档
+                </h2>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  本文面向 AI/Agent 的精简执行版。
+                </p>
+                <dl className="my-4 space-y-2 font-mono text-[11px] text-muted-foreground">
+                  <div className="flex justify-between gap-2">
+                    <dt>版本</dt>
+                    <dd>{post.aiDocument?.version || '1.0'}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt>风险</dt>
+                    <dd>{aiDocumentRiskLabels[aiDocumentRisk]}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt>状态</dt>
+                    <dd>{aiDocumentStatusLabels[aiDocumentStatus]}</dd>
+                  </div>
+                </dl>
+                <div className="[&_button]:w-full [&_button]:justify-center">
+                  <AIDocumentActions markdownURL={aiDocumentURL} />
+                </div>
+              </section>
+            )}
+
+            <div className="hidden xl:block">
+              <ArticleTOC />
+            </div>
+          </div>
+        </aside>
       </div>
     </article>
   )

@@ -14,11 +14,12 @@ import {
 import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { humanFieldAccess, humanOnly, isHumanUser } from '../../access/humanOnly'
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
+import { createProductAccess, readProductAccess, updateProductAccess } from './access'
 import { productInstallTemplate } from './installDocument'
+import { manageAgentProductWorkflow } from './hooks/manageAgentProductWorkflow'
 import { revalidateProduct, revalidateProductDelete } from './hooks/revalidateProduct'
 import { validateInstallDocument } from './hooks/validateInstallDocument'
 
@@ -29,10 +30,10 @@ export const Products: CollectionConfig<'products'> = {
     plural: '产品',
   },
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
-    update: authenticated,
+    create: createProductAccess,
+    delete: humanOnly,
+    read: readProductAccess,
+    update: updateProductAccess,
   },
   defaultPopulate: {
     title: true,
@@ -228,6 +229,10 @@ export const Products: CollectionConfig<'products'> = {
                   name: 'status',
                   type: 'select',
                   label: '验证状态',
+                  access: {
+                    create: humanFieldAccess,
+                    update: humanFieldAccess,
+                  },
                   defaultValue: 'draft',
                   options: [
                     { label: '草稿', value: 'draft' },
@@ -267,6 +272,10 @@ export const Products: CollectionConfig<'products'> = {
                   name: 'verifiedAt',
                   type: 'date',
                   label: '最后验证时间',
+                  access: {
+                    create: humanFieldAccess,
+                    update: humanFieldAccess,
+                  },
                   admin: {
                     condition: (_data, siblingData) => siblingData?.status === 'verified',
                     date: {
@@ -310,6 +319,53 @@ export const Products: CollectionConfig<'products'> = {
       ],
     },
     {
+      name: 'createdByAgent',
+      type: 'relationship',
+      label: '创建 Agent',
+      access: {
+        create: () => false,
+        read: ({ req }) => isHumanUser(req.user) || req.user?.collection === 'agents',
+        update: () => false,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      relationTo: 'agents',
+    },
+    {
+      name: 'reviewedBy',
+      type: 'relationship',
+      label: '安装文档审核人',
+      access: {
+        create: () => false,
+        read: humanFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+      relationTo: 'users',
+    },
+    {
+      name: 'reviewedAt',
+      type: 'date',
+      label: '安装文档审核时间',
+      access: {
+        create: () => false,
+        read: ({ req }) => isHumanUser(req.user) || req.user?.collection === 'agents',
+        update: () => false,
+      },
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
       name: 'publishedAt',
       type: 'date',
       label: '发布时间',
@@ -322,7 +378,7 @@ export const Products: CollectionConfig<'products'> = {
   hooks: {
     afterChange: [revalidateProduct],
     afterDelete: [revalidateProductDelete],
-    beforeChange: [populatePublishedAt, validateInstallDocument],
+    beforeChange: [manageAgentProductWorkflow, populatePublishedAt, validateInstallDocument],
   },
   versions: {
     drafts: {

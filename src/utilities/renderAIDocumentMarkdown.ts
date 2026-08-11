@@ -14,8 +14,13 @@ export const isAIDocumentReady = (post: Partial<Post> | null | undefined) => {
   )
 }
 
-export const renderAIDocumentMarkdown = (post: Post, sourceURL: string) => {
-  if (!isAIDocumentReady(post)) return null
+export const renderAIDocumentMarkdown = (
+  post: Post,
+  sourceURL: string,
+  options: { includeDraft?: boolean } = {},
+) => {
+  if (!options.includeDraft && !isAIDocumentReady(post)) return null
+  if (!post.aiDocument?.markdown?.trim()) return null
 
   const aiDocument = post.aiDocument!
   const frontmatter = [

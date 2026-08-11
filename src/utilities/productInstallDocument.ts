@@ -1,5 +1,62 @@
 import type { Product, Release } from '@/payload-types'
 
+export const requiredInstallDocumentHeadings = [
+  '安装目标',
+  '系统要求',
+  '安装步骤',
+  '首次运行',
+  '验证方法',
+  '卸载或回滚',
+] as const
+
+const hasHeading = (markdown: string, heading: string) => {
+  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^#{1,6}\\s+${escapedHeading}\\s*$`, 'm').test(markdown)
+}
+
+export const validateProductInstallDocument = (
+  product: Partial<Product> | null | undefined,
+  mode: 'admin-publish' | 'draft' | 'mcp-publish' = 'draft',
+) => {
+  const installDocument = product?.installDocument
+  const markdown = installDocument?.markdown?.trim() || ''
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  if (!markdown) {
+    errors.push('必须填写 AI 安装运行文档。')
+  } else {
+    const missingHeadings = requiredInstallDocumentHeadings.filter(
+      (heading) => !hasHeading(markdown, heading),
+    )
+    if (missingHeadings.length) {
+      errors.push(`AI 安装运行文档缺少必要章节：${missingHeadings.join('、')}。`)
+    }
+  }
+
+  if (installDocument?.riskLevel === 'high' && !installDocument.requiresApproval) {
+    errors.push('高风险安装文档必须启用“执行前需要人工确认”。')
+  }
+
+  if (mode !== 'draft') {
+    if (installDocument?.status !== 'reviewed' && installDocument?.status !== 'verified') {
+      errors.push('AI 安装运行文档必须由后台人工标记为“已审核”或“已验证”。')
+    }
+    if (mode === 'mcp-publish' && installDocument?.riskLevel === 'high') {
+      errors.push('高风险软件产品不能通过 MCP 发布，必须由后台人工发布。')
+    }
+  } else if (installDocument?.status === 'draft') {
+    warnings.push('安装文档仍是草稿，发布前需要后台人工审核。')
+  }
+
+  return {
+    errors,
+    readyForMCPPublish: mode === 'mcp-publish' && errors.length === 0,
+    readyForReview: errors.length === 0 || (mode === 'draft' && !errors.length),
+    warnings,
+  }
+}
+
 const yamlValue = (value: boolean | string | null | undefined) => {
   if (typeof value === 'boolean') return String(value)
   return JSON.stringify(value || '')
