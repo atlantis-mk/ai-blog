@@ -1,4 +1,9 @@
 import type { Post } from '@/payload-types'
+import {
+  aiDocumentURLPlaceholder,
+  aiPromptTemplate,
+  buildAIDocumentPrompt,
+} from '@/collections/Posts/aiDocument'
 import { validateABPost } from '@/utilities/abPost'
 import { isAIDocumentReady, renderAIDocumentMarkdown } from '@/utilities/renderAIDocumentMarkdown'
 import { describe, expect, it } from 'vitest'
@@ -24,6 +29,15 @@ const createPost = (overrides: Partial<Post> = {}) =>
   }) as Post
 
 describe('AI document', () => {
+  it('replaces the B document placeholder when building the copyable AI prompt', () => {
+    const markdownURL = 'https://example.com/posts/payload-guide/ai.md'
+    const prompt = buildAIDocumentPrompt(aiPromptTemplate, markdownURL)
+
+    expect(prompt).toContain(`AI 操作文档：${markdownURL}`)
+    expect(prompt).not.toContain(aiDocumentURLPlaceholder)
+    expect(prompt).toContain('- SSH 用户：<例如 root>')
+  })
+
   it('renders reviewed documents as Markdown with generated frontmatter', () => {
     const post = createPost()
     const markdown = renderAIDocumentMarkdown(post, 'https://example.com/posts/payload-guide')

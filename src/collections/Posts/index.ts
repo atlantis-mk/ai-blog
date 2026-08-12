@@ -3,7 +3,11 @@ import type { CollectionConfig } from 'payload'
 import { humanFieldAccess, humanOnly, isHumanUser } from '../../access/humanOnly'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { createPostAccess, readPostAccess, updatePostAccess } from './access'
-import { aiDocumentTemplate } from './aiDocument'
+import {
+  aiDocumentTemplate,
+  aiDocumentURLPlaceholder,
+  aiPromptTemplate,
+} from './aiDocument'
 import { postEditor } from './editor'
 import { manageAgentWorkflow } from './hooks/manageAgentWorkflow'
 import { populateAuthors } from './hooks/populateAuthors'
@@ -185,6 +189,20 @@ export const Posts: CollectionConfig<'posts'> = {
               admin: {
                 description: '不要重复标题和版本信息；系统会自动生成 YAML frontmatter。',
                 rows: 32,
+              },
+            },
+            {
+              name: 'prompt',
+              type: 'textarea',
+              label: '复制给 AI 的提示词',
+              validate: (value) =>
+                !value ||
+                value.includes(aiDocumentURLPlaceholder) ||
+                `提示词必须包含 ${aiDocumentURLPlaceholder}，复制时系统会自动替换为当前 AI 文档链接。`,
+              admin: {
+                description: `发布后，${aiDocumentURLPlaceholder} 会自动替换为当前 B 文链接；其他尖括号占位内容由读者复制后填写。`,
+                placeholder: aiPromptTemplate,
+                rows: 18,
               },
             },
           ],

@@ -1,26 +1,38 @@
 'use client'
 
+import { buildAIDocumentPrompt } from '@/collections/Posts/aiDocument'
 import { Check, Copy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Props = {
   markdownURL: string
+  promptTemplate?: string | null
 }
 
-export function AIDocumentActions({ markdownURL }: Props) {
-  const [copied, setCopied] = useState(false)
+type CopiedAction = 'link' | 'prompt'
+
+export function AIDocumentActions({ markdownURL, promptTemplate }: Props) {
+  const [copiedAction, setCopiedAction] = useState<CopiedAction | null>(null)
 
   useEffect(() => {
-    if (!copied) return
+    if (!copiedAction) return
 
-    const timeout = window.setTimeout(() => setCopied(false), 2000)
+    const timeout = window.setTimeout(() => setCopiedAction(null), 2000)
     return () => window.clearTimeout(timeout)
-  }, [copied])
+  }, [copiedAction])
+
+  const getAbsoluteURL = () => new URL(markdownURL, window.location.origin).href
 
   const copyLink = async () => {
-    const absoluteURL = new URL(markdownURL, window.location.origin).href
-    await navigator.clipboard.writeText(absoluteURL)
-    setCopied(true)
+    await navigator.clipboard.writeText(getAbsoluteURL())
+    setCopiedAction('link')
+  }
+
+  const copyPrompt = async () => {
+    if (!promptTemplate) return
+
+    await navigator.clipboard.writeText(buildAIDocumentPrompt(promptTemplate, getAbsoluteURL()))
+    setCopiedAction('prompt')
   }
 
   const actionClassName =
@@ -29,13 +41,23 @@ export function AIDocumentActions({ markdownURL }: Props) {
   return (
     <div className="flex flex-wrap gap-2">
       <button className={actionClassName} onClick={copyLink} type="button">
-        {copied ? (
+        {copiedAction === 'link' ? (
           <Check aria-hidden="true" className="size-3.5" />
         ) : (
           <Copy aria-hidden="true" className="size-3.5" />
         )}
-        {copied ? '已复制' : '复制链接'}
+        {copiedAction === 'link' ? '已复制链接' : '复制链接'}
       </button>
+      {promptTemplate && (
+        <button className={actionClassName} onClick={copyPrompt} type="button">
+          {copiedAction === 'prompt' ? (
+            <Check aria-hidden="true" className="size-3.5" />
+          ) : (
+            <Copy aria-hidden="true" className="size-3.5" />
+          )}
+          {copiedAction === 'prompt' ? '已复制提示词' : '复制提示词'}
+        </button>
+      )}
     </div>
   )
 }

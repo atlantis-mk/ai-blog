@@ -4,6 +4,7 @@ import * as migration_20260722_044105_add_products_and_releases from './20260722
 import * as migration_20260727_053215_add_blob_prefix from './20260727_053215_add_blob_prefix'
 import * as migration_20260727_112133_mcp_agent_publishing from './20260727_112133_mcp_agent_publishing'
 import * as migration_20260729_091440_mcp_software_publishing from './20260729_091440_mcp_software_publishing'
+import * as migration_20260812_103846_ai_document_prompt from './20260812_103846_ai_document_prompt'
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260729_091440_mcp_software_publishing.up,
     down: migration_20260729_091440_mcp_software_publishing.down,
     name: '20260729_091440_mcp_software_publishing',
+  },
+  {
+    up: migration_20260812_103846_ai_document_prompt.up,
+    down: migration_20260812_103846_ai_document_prompt.down,
+    name: '20260812_103846_ai_document_prompt',
   },
 ]

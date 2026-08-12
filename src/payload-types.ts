@@ -285,6 +285,10 @@ export interface Post {
      * 不要重复标题和版本信息；系统会自动生成 YAML frontmatter。
      */
     markdown?: string | null;
+    /**
+     * 发布后，<粘贴链接> 会自动替换为当前 B 文链接；其他尖括号占位内容由读者复制后填写。
+     */
+    prompt?: string | null;
   };
   relatedPosts?: (number | Post)[] | null;
   categories?: (number | Category)[] | null;
@@ -1439,6 +1443,7 @@ export interface PostsSelect<T extends boolean = true> {
         requiresApproval?: T;
         verifiedAt?: T;
         markdown?: T;
+        prompt?: T;
       };
   relatedPosts?: T;
   categories?: T;
