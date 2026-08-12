@@ -1,11 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PayloadRedirects } from '@/components/PayloadRedirects'
-import {
-  aiDocumentRiskLabels,
-  aiDocumentStatusLabels,
-  aiPromptTemplate,
-} from '@/collections/Posts/aiDocument'
+import { aiDocumentRiskLabels, aiDocumentStatusLabels } from '@/collections/Posts/aiDocument'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
@@ -167,10 +163,7 @@ export default async function Post({ params: paramsPromise }: Args) {
                   </div>
                 </dl>
                 <div className="[&_button]:w-full [&_button]:justify-center">
-                  <AIDocumentActions
-                    markdownURL={aiDocumentURL}
-                    promptTemplate={post.aiDocument?.prompt || aiPromptTemplate}
-                  />
+                  <AIDocumentActions markdownURL={aiDocumentURL} />
                 </div>
               </section>
             )}
