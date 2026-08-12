@@ -10,6 +10,7 @@ const workflowFields = [
   'compatibility',
   'riskLevel',
   'requiresApproval',
+  'prompt',
 ] as const
 
 const differs = (left: unknown, right: unknown): boolean =>

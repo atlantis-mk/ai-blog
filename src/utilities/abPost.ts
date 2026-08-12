@@ -6,6 +6,8 @@ import {
 } from '@payloadcms/richtext-lexical'
 import type { Payload } from 'payload'
 
+import { normalizeMarkdownCodeFenceLanguages } from '@/blocks/Code/languages'
+
 export type ABValidationMode = 'draft' | 'human-publish' | 'mcp-publish'
 
 export type ABValidationReport = {
@@ -65,7 +67,7 @@ const findPostEditorConfig = (payload: Payload): SanitizedServerEditorConfig => 
 export const markdownToPostContent = (payload: Payload, markdown: string): Post['content'] =>
   convertMarkdownToLexical({
     editorConfig: findPostEditorConfig(payload),
-    markdown,
+    markdown: normalizeMarkdownCodeFenceLanguages(markdown),
   }) as Post['content']
 
 export const postContentToMarkdown = (payload: Payload, content: Post['content']): string =>
@@ -73,11 +75,6 @@ export const postContentToMarkdown = (payload: Payload, content: Post['content']
     data: content,
     editorConfig: findPostEditorConfig(payload),
   })
-
-const hasHeading = (markdown: string, heading: string) => {
-  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^#{1,6}\\s+${escapedHeading}\\s*$`, 'm').test(markdown)
-}
 
 export const validateABPost = ({
   aMarkdown,
@@ -97,18 +94,6 @@ export const validateABPost = ({
   if (!normalizedB) errors.push('B 文 Markdown 不能为空。')
   if (!aiDocument?.kind) errors.push('B 文必须指定文档类型。')
   if (!aiDocument?.version?.trim()) errors.push('B 文必须指定版本。')
-
-  if (normalizedB) {
-    const requiredHeadings =
-      aiDocument?.kind === 'runbook'
-        ? ['目标', '前置条件', '操作步骤', '输出结果', '验证方法', '回滚方式']
-        : ['目标', '输出结果', '验证方法']
-
-    const missingHeadings = requiredHeadings.filter((heading) => !hasHeading(normalizedB, heading))
-    if (missingHeadings.length) {
-      errors.push(`B 文缺少必要章节：${missingHeadings.join('、')}。`)
-    }
-  }
 
   if (aiDocument?.riskLevel === 'high' && !aiDocument.requiresApproval) {
     errors.push('高风险 B 文必须启用“执行前需要人工确认”。')

@@ -60,12 +60,12 @@ describe('AI document', () => {
     expect(renderAIDocumentMarkdown(post, 'https://example.com/posts/payload-guide')).toBeNull()
   })
 
-  it('blocks publishing a runbook without required sections', () => {
+  it('allows a runbook to use its own section structure', () => {
     const report = validateABPost({
       aMarkdown: '# A 文',
       aiDocument: {
         kind: 'runbook',
-        markdown: '# 目标\n\n完成任务。\n\n# 验证方法\n\n运行测试。',
+        markdown: '# 自定义执行说明\n\n完成任务并记录结果。',
         riskLevel: 'low',
         status: 'reviewed',
         version: '1.0',
@@ -73,15 +73,16 @@ describe('AI document', () => {
       mode: 'human-publish',
     })
 
-    expect(report.errors.join(' ')).toContain('前置条件、操作步骤、输出结果、回滚方式')
+    expect(report.errors).toEqual([])
+    expect(report.readyForPublish).toBe(true)
   })
 
-  it('requires an output section for non-runbook B documents', () => {
+  it('allows non-runbook B documents without predefined sections', () => {
     const report = validateABPost({
       aMarkdown: '# A 文',
       aiDocument: {
         kind: 'reference',
-        markdown: '# 目标\n\n说明主题。\n\n# 验证方法\n\n核对来源。',
+        markdown: '这是一份不使用标题的知识参考。',
         riskLevel: 'low',
         status: 'reviewed',
         version: '1.0',
@@ -89,7 +90,8 @@ describe('AI document', () => {
       mode: 'human-publish',
     })
 
-    expect(report.errors).toContain('B 文缺少必要章节：输出结果。')
+    expect(report.errors).toEqual([])
+    expect(report.readyForPublish).toBe(true)
   })
 
   it('requires approval for high-risk documents', () => {

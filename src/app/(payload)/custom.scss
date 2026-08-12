@@ -1,0 +1,11 @@
+// Markdown tables do not carry column widths into Lexical. Payload's default
+// `width: fit-content` therefore collapses them to their minimum content width.
+// Let un-sized tables use the editor width while keeping the existing fixed
+// table layout and cell-resizing behavior.
+.rich-text-lexical .LexicalEditorTheme__table {
+  width: 100%;
+}
+
+.rich-text-lexical .LexicalEditorTheme__tableScrollableWrapper {
+  max-width: calc(100% - 25px);
+}

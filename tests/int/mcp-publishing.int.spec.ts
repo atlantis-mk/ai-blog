@@ -37,6 +37,11 @@ const bMarkdown = `# 目标
 由后台恢复历史版本。
 `
 
+const aiPrompt = `请处理以下由我授权管理的服务器：
+- SSH 用户：<例如 root>
+
+AI 操作文档：<粘贴链接>`
+
 describe('MCP A/B publishing', () => {
   let payload: Payload
   let agent: Agent
@@ -261,6 +266,7 @@ describe('MCP A/B publishing', () => {
           compatibility: 'Payload 3.86 / Node.js 22+',
           kind: 'runbook',
           markdown: bMarkdown,
+          prompt: aiPrompt,
           requiresApproval: false,
           riskLevel: 'low',
           version: '1.0',
@@ -275,6 +281,7 @@ describe('MCP A/B publishing', () => {
     const createdData = created.structuredContent as {
       post: {
         id: number
+        aiDocument: { prompt?: string | null }
         status: string
         updatedAt: string
         validation: { readyForReview: boolean }
@@ -283,6 +290,7 @@ describe('MCP A/B publishing', () => {
     const id = createdData.post.id
     postIDs.push(id)
     expect(createdData.post.status).toBe('draft')
+    expect(createdData.post.aiDocument.prompt).toBe(aiPrompt)
     expect(createdData.post.validation.readyForReview).toBe(true)
 
     await expect(
@@ -334,15 +342,35 @@ describe('MCP A/B publishing', () => {
       arguments: {
         expectedUpdatedAt: reviewed.updatedAt,
         id,
-        patch: { aMarkdown: '# MCP 测试文章\n\n更新后的 A 文。' },
+        patch: {
+          aMarkdown:
+            '# MCP 测试文章\n\n更新后的 A 文。\n\n```unknown-language\nhttp://127.0.0.1:8080/example/\n```',
+          bDocument: { prompt: `${aiPrompt}\n\n完成后汇总验证结果。` },
+        },
       },
       name: 'update_ab_post',
     })
     expect(changed.isError).not.toBe(true)
     const changedData = changed.structuredContent as {
-      post: { aiDocument: { status: string }; updatedAt: string }
+      post: { aiDocument: { prompt?: string | null; status: string }; updatedAt: string }
     }
     expect(changedData.post.aiDocument.status).toBe('draft')
+    expect(changedData.post.aiDocument.prompt).toContain('完成后汇总验证结果。')
+
+    const cleared = await client.callTool({
+      arguments: {
+        expectedUpdatedAt: changedData.post.updatedAt,
+        id,
+        patch: { bDocument: { prompt: null } },
+      },
+      name: 'update_ab_post',
+    })
+    expect(cleared.isError).not.toBe(true)
+    const clearedData = cleared.structuredContent as {
+      post: { aiDocument: { prompt?: string | null; status: string }; updatedAt: string }
+    }
+    expect(clearedData.post.aiDocument.prompt).toBeNull()
+    expect(clearedData.post.aiDocument.status).toBe('draft')
 
     const changedDraft = await payload.findByID({
       collection: 'posts',
@@ -364,6 +392,9 @@ describe('MCP A/B publishing', () => {
       post: { aMarkdown: string; updatedAt: string }
     }
     expect(fetchedData.post.aMarkdown).toContain('更新后的 A 文')
+    expect(fetchedData.post.aMarkdown).toContain(
+      '```text\nhttp://127.0.0.1:8080/example/\n```',
+    )
 
     const bResource = await client.readResource({ uri: `aiblog://posts/${id}/agent` })
     expect(bResource.contents[0]).toMatchObject({ mimeType: 'text/markdown' })
@@ -380,6 +411,33 @@ describe('MCP A/B publishing', () => {
     expect(published.isError).not.toBe(true)
     const publishedData = published.structuredContent as { post: { status: string } }
     expect(publishedData.post.status).toBe('published')
+  })
+
+  it('rejects an MCP prompt without the B document URL placeholder', async () => {
+    const result = await client.callTool({
+      arguments: {
+        aMarkdown: '# 非法提示词测试\n\nA 文。',
+        bDocument: {
+          compatibility: '测试环境',
+          kind: 'runbook',
+          markdown: bMarkdown,
+          prompt: '请直接执行文档，但这里没有链接占位符。',
+          requiresApproval: false,
+          riskLevel: 'low',
+          version: '1.0',
+        },
+        slug: `mcp-invalid-prompt-${crypto.randomUUID()}`,
+        title: 'MCP 非法提示词测试',
+      },
+      name: 'create_ab_post',
+    })
+
+    expect(result.isError).toBe(true)
+    expect(result.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ text: expect.stringContaining('<粘贴链接>') }),
+      ]),
+    )
   })
 
   it('rejects stale updates and high-risk MCP publishing', async () => {

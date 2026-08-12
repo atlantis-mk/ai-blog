@@ -4,6 +4,7 @@ import { APIError } from 'payload'
 import { z } from 'zod'
 
 import type { Agent, Media, Post } from '@/payload-types'
+import { aiDocumentURLPlaceholder } from '@/collections/Posts/aiDocument'
 import { createMCPContext, hasAgentScope, type AgentScope } from '@/mcp/context'
 import { markdownToPostContent, postContentToMarkdown, validateABPost } from '@/utilities/abPost'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -14,13 +15,23 @@ import { registerSoftwarePublishing } from './software'
 
 const MAX_A_MARKDOWN_LENGTH = 200_000
 const MAX_B_MARKDOWN_LENGTH = 100_000
+const MAX_AI_PROMPT_LENGTH = 20_000
 
 const postIDSchema = z.number().int().positive()
+const aiPromptSchema = z
+  .string()
+  .max(MAX_AI_PROMPT_LENGTH)
+  .refine((value) => !value || value.includes(aiDocumentURLPlaceholder), {
+    message: `提示词必须包含 ${aiDocumentURLPlaceholder}，系统会在复制时替换为当前 B 文链接。`,
+  })
+  .nullable()
+  .optional()
 const bDocumentSchema = z
   .object({
     compatibility: z.string().max(5_000).optional(),
     kind: z.enum(['runbook', 'reference', 'checklist']),
     markdown: z.string().min(1).max(MAX_B_MARKDOWN_LENGTH),
+    prompt: aiPromptSchema,
     requiresApproval: z.boolean().default(false),
     riskLevel: z.enum(['low', 'medium', 'high']).default('low'),
     version: z.string().min(1).max(100),
