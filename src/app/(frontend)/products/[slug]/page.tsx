@@ -347,7 +347,10 @@ export default async function ProductPage({ params }: Args) {
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { slug = '' } = await params
   const product = await queryProductBySlug(decodeURIComponent(slug))
-  const metadata = await generateMeta({ doc: product })
+  const metadata = await generateMeta({
+    canonicalPath: `/products/${encodeURIComponent(slug)}`,
+    doc: product,
+  })
 
   if (!product || !isProductInstallReady(product)) return metadata
 

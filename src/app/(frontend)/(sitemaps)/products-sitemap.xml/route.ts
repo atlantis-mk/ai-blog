@@ -2,14 +2,12 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
+import { getServerSideURL } from '@/utilities/getURL'
 
 const getProductsSitemap = unstable_cache(
   async () => {
     const payload = await getPayload({ config })
-    const siteURL =
-      process.env.NEXT_PUBLIC_SERVER_URL ||
-      process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-      'https://example.com'
+    const siteURL = getServerSideURL()
     const results = await payload.find({
       collection: 'products',
       overrideAccess: false,
@@ -30,7 +28,7 @@ const getProductsSitemap = unstable_cache(
     const dateFallback = new Date().toISOString()
 
     return results.docs.map((product) => ({
-      loc: `${siteURL}/products/${product.slug}`,
+      loc: `${siteURL}/products/${encodeURIComponent(product.slug)}`,
       lastmod: product.updatedAt || dateFallback,
     }))
   },

@@ -1,33 +1,20 @@
-import type { Block } from 'payload'
+import { CodeBlock } from '@payloadcms/richtext-lexical'
 
-export const Code: Block = {
+export const Code = CodeBlock({
+  defaultLanguage: 'typescript',
+  fieldOverrides: {
+    interfaceName: 'CodeBlock',
+  },
+  languages: {
+    bash: 'Bash',
+    css: 'CSS',
+    html: 'HTML',
+    javascript: 'JavaScript',
+    json: 'JSON',
+    markdown: 'Markdown',
+    sql: 'SQL',
+    typescript: 'TypeScript',
+    yaml: 'YAML',
+  },
   slug: 'code',
-  interfaceName: 'CodeBlock',
-  fields: [
-    {
-      name: 'language',
-      type: 'select',
-      defaultValue: 'typescript',
-      options: [
-        {
-          label: 'Typescript',
-          value: 'typescript',
-        },
-        {
-          label: 'Javascript',
-          value: 'javascript',
-        },
-        {
-          label: 'CSS',
-          value: 'css',
-        },
-      ],
-    },
-    {
-      name: 'code',
-      type: 'code',
-      label: false,
-      required: true,
-    },
-  ],
-}
+})

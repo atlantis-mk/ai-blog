@@ -4,36 +4,42 @@ import type { Media, Page, Post, Product, Config } from '../payload-types'
 
 import { mergeOpenGraph } from './mergeOpenGraph'
 import { getServerSideURL } from './getURL'
+import { formatSiteTitle, SITE_DESCRIPTION, SITE_TITLE } from './siteMetadata'
 
-const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
+export const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
   const serverUrl = getServerSideURL()
 
-  let url = serverUrl + '/website-template-OG.webp'
+  let path = '/website-template-OG.webp'
 
   if (image && typeof image === 'object' && 'url' in image) {
     const ogUrl = image.sizes?.og?.url
 
-    url = ogUrl ? serverUrl + ogUrl : serverUrl + image.url
+    path = ogUrl || image.url || path
   }
 
-  return url
+  return new URL(path, `${serverUrl}/`).toString()
 }
 
 export const generateMeta = async (args: {
   doc: Partial<Page> | Partial<Post> | Partial<Product> | null
+  canonicalPath?: string
 }): Promise<Metadata> => {
-  const { doc } = args
+  const { canonicalPath = '/', doc } = args
 
   const ogImage = getImageURL(doc?.meta?.image)
+  const canonicalURL = new URL(canonicalPath, `${getServerSideURL()}/`).toString()
+  const documentTitle = doc?.meta?.title || doc?.title
+  const description = doc?.meta?.description || SITE_DESCRIPTION
 
-  const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Payload Website Template'
-    : 'Payload Website Template'
+  const title = documentTitle || SITE_TITLE
 
   return {
-    description: doc?.meta?.description,
+    alternates: {
+      canonical: canonicalURL,
+    },
+    description,
     openGraph: mergeOpenGraph({
-      description: doc?.meta?.description || '',
+      description,
       images: ogImage
         ? [
             {
@@ -41,9 +47,9 @@ export const generateMeta = async (args: {
             },
           ]
         : undefined,
-      title,
-      url: Array.isArray(doc?.slug) ? doc?.slug.join('/') : '/',
+      title: formatSiteTitle(title),
+      url: canonicalURL,
     }),
-    title,
+    title: documentTitle || { absolute: SITE_TITLE },
   }
 }

@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 
 import { PayloadRedirects } from '@/components/PayloadRedirects'
-import { aiDocumentRiskLabels, aiDocumentStatusLabels } from '@/collections/Posts/aiDocument'
+import {
+  aiDocumentRiskLabels,
+  aiDocumentStatusLabels,
+  aiPromptTemplate,
+} from '@/collections/Posts/aiDocument'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
@@ -18,6 +22,10 @@ import { formatDateTime } from '@/utilities/formatDateTime'
 import { getServerSideURL } from '@/utilities/getURL'
 import { isAIDocumentReady } from '@/utilities/renderAIDocumentMarkdown'
 import Link from 'next/link'
+import {
+  generateArticleStructuredData,
+  serializeStructuredData,
+} from '@/utilities/generateArticleStructuredData'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -59,9 +67,16 @@ export default async function Post({ params: paramsPromise }: Args) {
   const aiDocumentURL = `/posts/${encodeURIComponent(post.slug)}/ai.md`
   const aiDocumentRisk = post.aiDocument?.riskLevel || 'low'
   const aiDocumentStatus = post.aiDocument?.status || 'draft'
+  const articleStructuredData = generateArticleStructuredData(post)
 
   return (
     <article className="pb-20 pt-14 md:pt-20">
+      <script
+        dangerouslySetInnerHTML={{
+          __html: serializeStructuredData(articleStructuredData),
+        }}
+        type="application/ld+json"
+      />
       {/* Allows redirects for valid pages too */}
       <PayloadRedirects disableNotFound url={url} />
 
@@ -109,7 +124,12 @@ export default async function Post({ params: paramsPromise }: Args) {
           </header>
 
           <div data-article-content className="article-content pt-10">
-            <RichText className="max-w-none" data={post.content} enableGutter={false} />
+            <RichText
+              className="max-w-none"
+              data={post.content}
+              enableGutter={false}
+              leadingH1ToRemove={post.title}
+            />
           </div>
         </div>
 
@@ -147,7 +167,10 @@ export default async function Post({ params: paramsPromise }: Args) {
                   </div>
                 </dl>
                 <div className="[&_button]:w-full [&_button]:justify-center">
-                  <AIDocumentActions markdownURL={aiDocumentURL} />
+                  <AIDocumentActions
+                    markdownURL={aiDocumentURL}
+                    promptTemplate={post.aiDocument?.prompt || aiPromptTemplate}
+                  />
                 </div>
               </section>
             )}
@@ -168,16 +191,36 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const decodedSlug = decodeURIComponent(slug)
   const post = await queryPostBySlug({ slug: decodedSlug })
 
-  const metadata = await generateMeta({ doc: post })
+  const metadata = await generateMeta({
+    canonicalPath: `/posts/${encodeURIComponent(decodedSlug)}`,
+    doc: post,
+  })
 
-  if (!post || !isAIDocumentReady(post)) return metadata
+  if (!post) return metadata
+
+  const authorNames =
+    post.populatedAuthors
+      ?.map((author) => author.name)
+      .filter((name): name is string => Boolean(name)) || []
+  const articleMetadata: Metadata = {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      authors: authorNames,
+      modifiedTime: post.updatedAt,
+      publishedTime: post.publishedAt || post.createdAt,
+      type: 'article',
+    },
+  }
+
+  if (!isAIDocumentReady(post)) return articleMetadata
 
   return {
-    ...metadata,
+    ...articleMetadata,
     alternates: {
-      ...metadata.alternates,
+      ...articleMetadata.alternates,
       types: {
-        ...metadata.alternates?.types,
+        ...articleMetadata.alternates?.types,
         'text/markdown': [
           {
             title: `${post.title} — AI 文档`,

@@ -59,10 +59,50 @@ type Props = {
   data: DefaultTypedEditorState
   enableGutter?: boolean
   enableProse?: boolean
+  leadingH1ToRemove?: string
 } & React.HTMLAttributes<HTMLDivElement>
 
+type TextNode = {
+  children?: TextNode[]
+  text?: string
+}
+
+const getNodeText = (node: TextNode): string =>
+  typeof node.text === 'string' ? node.text : (node.children || []).map(getNodeText).join('')
+
+export const removeDuplicateLeadingH1 = (
+  data: DefaultTypedEditorState,
+  heading?: string,
+): DefaultTypedEditorState => {
+  if (!heading) return data
+
+  const firstNode = data.root.children[0] as TextNode & { tag?: string; type?: string }
+  if (
+    firstNode?.type !== 'heading' ||
+    firstNode.tag !== 'h1' ||
+    getNodeText(firstNode).trim() !== heading.trim()
+  ) {
+    return data
+  }
+
+  return {
+    ...data,
+    root: {
+      ...data.root,
+      children: data.root.children.slice(1),
+    },
+  }
+}
+
 export default function RichText(props: Props) {
-  const { className, enableProse = true, enableGutter = true, ...rest } = props
+  const {
+    className,
+    data,
+    enableProse = true,
+    enableGutter = true,
+    leadingH1ToRemove,
+    ...rest
+  } = props
   return (
     <ConvertRichText
       converters={jsxConverters}
@@ -75,6 +115,7 @@ export default function RichText(props: Props) {
         },
         className,
       )}
+      data={removeDuplicateLeadingH1(data, leadingH1ToRemove)}
       {...rest}
     />
   )

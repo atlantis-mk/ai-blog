@@ -338,7 +338,6 @@ export interface Media {
     };
     [k: string]: unknown;
   } | null;
-  prefix?: string | null;
   folder?: (number | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
@@ -1569,7 +1568,6 @@ export interface ReleasesSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   caption?: T;
-  prefix?: T;
   folder?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2180,8 +2178,8 @@ export interface BannerBlock {
  * via the `definition` "CodeBlock".
  */
 export interface CodeBlock {
-  language?: ('typescript' | 'javascript' | 'css') | null;
-  code: string;
+  language?: ('bash' | 'css' | 'html' | 'javascript' | 'json' | 'markdown' | 'sql' | 'typescript' | 'yaml') | null;
+  code?: string | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'code';

@@ -144,6 +144,9 @@ Vercel 的 Production、Preview 和 Development 环境应配置以下变量：
 | `CRON_SECRET` | Payload 定时任务鉴权 | 手工生成 |
 | `PREVIEW_SECRET` | 草稿预览鉴权 | 手工生成 |
 | `NEXT_PUBLIC_SERVER_URL` | 自定义正式域名，可选 | 有自定义域名时设置 |
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console HTML 元标记验证码，可选 | Search Console |
+| `BAIDU_SITE_VERIFICATION` | 百度搜索资源平台 HTML 标签验证码，可选 | 百度搜索资源平台 |
+| `BING_SITE_VERIFICATION` | Bing Webmaster Tools HTML 元标记验证码，可选 | Bing Webmaster Tools |
 | `MCP_ALLOWED_HOSTS` | 额外允许的 MCP Host，可选 | 逗号分隔 |
 | `MCP_ALLOWED_ORIGINS` | 额外允许的 MCP Origin，可选 | 逗号分隔完整 URL |
 
@@ -156,6 +159,22 @@ openssl rand -hex 32
 每个用途使用不同的随机值。不要在文档、提交记录、Issue 或聊天中粘贴真实值。
 
 如果新增或修改环境变量，应在 Vercel 控制台保存后重新部署；已经完成的旧部署不会自动获得新的构建结果。
+
+搜索平台只需要填写验证码的 `content` 值，不要粘贴完整 `<meta>` 标签。重新部署后，在页面源码中确认对应标签存在：
+
+```html
+<meta name="google-site-verification" content="...">
+<meta name="baidu-site-verification" content="...">
+<meta name="msvalidate.01" content="...">
+```
+
+完成所有权验证后，在各平台提交统一的 Sitemap 索引：
+
+```text
+https://blog.atlankj.com/sitemap.xml
+```
+
+Google 使用 Search Console 的“Sitemaps”，百度使用搜索资源平台的“链接提交 / Sitemap”，Bing 使用 Webmaster Tools 的“Sitemaps”。站点的 `robots.txt` 也会自动声明这个 Sitemap；提交用于加快发现和查看错误，不代表搜索引擎保证收录。
 
 ## 首次重新接入 Vercel
 
@@ -275,4 +294,3 @@ git config user.email "185823991+atlantis-mk@users.noreply.github.com"
 [ ] Vercel 最新部署为 Ready
 [ ] 首页、后台、API 和媒体上传已验证
 ```
-

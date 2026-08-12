@@ -58,6 +58,10 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: `Payload Website Template Posts`,
+    alternates: {
+      canonical: '/posts',
+    },
+    description: 'AIBLOG 已发布的 AI 教程、技术笔记与可执行操作指南。',
+    title: '文章',
   }
 }

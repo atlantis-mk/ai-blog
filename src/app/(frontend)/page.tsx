@@ -4,6 +4,8 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
 import { PostList } from '@/components/tech-blog/PostList'
+import type { Metadata } from 'next'
+import { SITE_DESCRIPTION, SITE_TITLE } from '@/utilities/siteMetadata'
 
 export default async function HomePage() {
   const payload = await getPayload({ config: configPromise })
@@ -65,7 +67,12 @@ export default async function HomePage() {
   )
 }
 
-export const metadata = {
-  title: 'AIBLOG — 极客AI教程',
-  description: '让 AI 能照着执行，也让人类看懂过程的实用教程。',
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+  description: SITE_DESCRIPTION,
+  title: {
+    absolute: SITE_TITLE,
+  },
 }

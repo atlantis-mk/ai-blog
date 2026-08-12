@@ -99,10 +99,10 @@ export const validateABPost = ({
   if (!aiDocument?.version?.trim()) errors.push('B 文必须指定版本。')
 
   if (normalizedB) {
-    const requiredHeadings = ['目标', '验证方法']
-    if (aiDocument?.kind === 'runbook') {
-      requiredHeadings.push('前置条件', '操作步骤', '回滚方式')
-    }
+    const requiredHeadings =
+      aiDocument?.kind === 'runbook'
+        ? ['目标', '前置条件', '操作步骤', '输出结果', '验证方法', '回滚方式']
+        : ['目标', '输出结果', '验证方法']
 
     const missingHeadings = requiredHeadings.filter((heading) => !hasHeading(normalizedB, heading))
     if (missingHeadings.length) {

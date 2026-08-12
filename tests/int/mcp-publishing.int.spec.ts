@@ -24,6 +24,10 @@ const bMarkdown = `# 目标
 
 调用 MCP 工具。
 
+# 输出结果
+
+生成一篇包含 A 文和 B 文的文章草稿。
+
 # 验证方法
 
 确认文章状态为 published。

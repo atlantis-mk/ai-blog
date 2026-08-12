@@ -1,0 +1,18 @@
+# Local-only scripts and data
+tmp/
+.db
+.env*
+
+# Development and verification artifacts
+docs/drafts/
+tests/
+test-results/
+playwright-report/
+blob-report/
+
+# Generated local output
+.next/
+node_modules/
+public/media/
+public/robots.txt
+public/sitemap*.xml

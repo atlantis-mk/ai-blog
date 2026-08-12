@@ -285,3 +285,35 @@ html[data-theme='light'] {
   margin-left: 0;
   padding-left: 1rem;
 }
+
+.article-content .payload-richtext .lexical-table-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.article-content .payload-richtext table {
+  min-width: 42rem;
+  width: 100%;
+}
+
+.article-content .payload-richtext th {
+  background: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  color: var(--foreground);
+  font-weight: 500;
+  text-align: left;
+}
+
+.article-content .payload-richtext th,
+.article-content .payload-richtext td {
+  border-color: var(--border) !important;
+  padding: 0.75rem !important;
+  vertical-align: top;
+}
+
+.article-content .payload-richtext :not(pre) > code {
+  background: color-mix(in oklab, var(--foreground) 7%, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  padding: 0.1em 0.35em;
+}

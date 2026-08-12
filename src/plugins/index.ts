@@ -12,9 +12,10 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 
 import { Page, Post, Product } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+import { formatSiteTitle } from '@/utilities/siteMetadata'
 
 const generateTitle: GenerateTitle<Post | Page | Product> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Payload Website Template` : 'Payload Website Template'
+  return formatSiteTitle(doc?.title)
 }
 
 const generateURL: GenerateURL<Post | Page | Product> = ({ collectionSlug, doc }) => {
