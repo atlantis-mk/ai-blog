@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { cache } from 'react'
 import { draftMode } from 'next/headers'
-import { ArrowDownToLine, ArrowUpRight, CheckCircle2, Package, ShieldCheck } from 'lucide-react'
+import { ArrowDownToLine, CheckCircle2, Package, ShieldCheck } from 'lucide-react'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 
@@ -14,12 +14,19 @@ import { AIDocumentActions } from '@/components/tech-blog/AIDocumentActions'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { Media } from '@/components/Media'
 import { PayloadRedirects } from '@/components/PayloadRedirects'
+import { ProductDownloadActions } from '@/components/products/ProductDownloadActions'
 import RichText from '@/components/RichText'
 import type { Product } from '@/payload-types'
 import { generateMeta } from '@/utilities/generateMeta'
 import { getServerSideURL } from '@/utilities/getURL'
 import { formatDateTime } from '@/utilities/formatDateTime'
 import { getReleaseDownloadURL, isProductInstallReady } from '@/utilities/productInstallDocument'
+import {
+  getLatestProductReleaseManifest,
+  resolveLatestProductLinks,
+} from '@/utilities/productReleaseManifest'
+
+export const revalidate = 300
 
 type Args = {
   params: Promise<{
@@ -53,7 +60,10 @@ export default async function ProductPage({ params }: Args) {
   if (!product) return <PayloadRedirects url={url} />
 
   const releases = await queryReleases(product.id, draft)
-  const currentRelease = releases.find((release) => release.channel === 'stable')
+  const currentRelease = releases.find((release) => release.channel === 'stable') || releases[0]
+  const releaseManifest = await getLatestProductReleaseManifest(product, currentRelease || null)
+  const currentVersion = releaseManifest?.version || currentRelease?.version
+  const productLinks = resolveLatestProductLinks(product.links || [], releaseManifest)
   const downloadURL = getReleaseDownloadURL(currentRelease)
   const hasInstallDocument = Boolean(
     currentRelease && downloadURL && isProductInstallReady(product),
@@ -113,29 +123,9 @@ export default async function ProductPage({ params }: Args) {
               </div>
             ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              {downloadURL && currentRelease && (
-                <a
-                  className="inline-flex items-center gap-2 bg-foreground px-5 py-3 text-sm font-medium text-background hover:opacity-85"
-                  href={downloadURL}
-                >
-                  <ArrowDownToLine aria-hidden="true" className="size-4" />
-                  下载 v{currentRelease.version}
-                </a>
-              )}
-              {product.links?.map(({ id, label, url: linkURL }) => (
-                <a
-                  className="inline-flex items-center gap-2 border border-border px-5 py-3 text-sm hover:bg-muted"
-                  href={linkURL}
-                  key={id || linkURL}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {label}
-                  <ArrowUpRight aria-hidden="true" className="size-3.5" />
-                </a>
-              ))}
-            </div>
+            {currentVersion && productLinks.length ? (
+              <ProductDownloadActions links={productLinks} version={currentVersion} />
+            ) : null}
 
             {currentRelease && (
               <dl className="mt-7 grid gap-2 font-mono text-[11px] text-muted-foreground sm:grid-cols-2">
@@ -264,7 +254,7 @@ export default async function ProductPage({ params }: Args) {
                 <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
                   <div className="flex gap-2">
                     <dt>适用版本</dt>
-                    <dd>{currentRelease.version}</dd>
+                    <dd>{currentVersion}</dd>
                   </div>
                   <div className="flex gap-2">
                     <dt>风险</dt>
@@ -355,7 +345,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   if (!product || !isProductInstallReady(product)) return metadata
 
   const releases = await queryReleases(product.id, false)
-  const currentRelease = releases.find((release) => release.channel === 'stable')
+  const currentRelease = releases.find((release) => release.channel === 'stable') || releases[0]
   if (!currentRelease || !getReleaseDownloadURL(currentRelease)) return metadata
 
   return {
