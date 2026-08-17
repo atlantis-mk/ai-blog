@@ -13,6 +13,9 @@ export const HeaderNav: React.FC<{ data: HeaderType }> = () => {
       <Link className="hover:text-foreground" href="/posts">
         文章
       </Link>
+      <Link className="hover:text-foreground" href="/products">
+        产品
+      </Link>
       <Link className="inline-flex items-center gap-1.5 hover:text-foreground" href="/search">
         <SearchIcon className="size-3.5" />
         搜索
